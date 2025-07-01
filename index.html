@@ -668,7 +668,6 @@
                     <label class="form-label">연락처</label>
                     <input type="tel" class="form-control" id="employeeContact" placeholder="010-0000-0000" required>
                 </div>
-                <div style="text-align: right;">
                 <div class="form-group">
                     <label class="form-label">생년월일</label>
                     <input type="date" class="form-control" id="employeeBirth" required>
@@ -685,6 +684,7 @@
                     <label class="form-label">비밀번호(6자리 숫자)</label>
                     <input type="password" class="form-control" id="employeePass" pattern="\d{6}" required>
                 </div>
+                <div style="text-align: right;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">취소</button>
                     <button type="submit" class="btn btn-primary">저장</button>
                 </div>
@@ -841,19 +841,17 @@
         function loadEmployeeList() {
             const tbody = document.getElementById('employeeTableBody');
             tbody.innerHTML = '';
-            
+
             employees.forEach(emp => {
                 const row = document.createElement('tr');
-            employees.forEach(emp => {
-                const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${emp.name}</td>
                     <td>${emp.role}</td>
                     <td>${emp.hourly_rate.toLocaleString()}원</td>
                     <td>${emp.contact}</td>
-                    <td>${emp.birth_date}</td>
-                    <td>${emp.hire_date}</td>
-                    <td>${emp.health_expiry}</td>
+                    <td>${emp.birth_date || ''}</td>
+                    <td>${emp.hire_date || ''}</td>
+                    <td>${emp.health_expiry || ''}</td>
                     <td>
                         <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="editEmployee(${emp.id})">수정</button>
                         <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteEmployee(${emp.id})">삭제</button>
@@ -861,6 +859,7 @@
                 `;
                 tbody.appendChild(row);
             });
+        }
 
         // 직원 추가 모달 표시
         function showAddEmployeeModal() {
@@ -898,20 +897,19 @@
         // 직원 저장
         function saveEmployee(event) {
             event.preventDefault();
-            
+
+            const employeeId = document.getElementById('employeeId').value;
             const employeeData = {
                 name: document.getElementById('employeeName').value,
-            const employeeData = {
-                name: document.getElementById("employeeName").value,
-                role: document.getElementById("employeeRole").value,
-                hourly_rate: parseInt(document.getElementById("employeeHourlyRate").value),
-                contact: document.getElementById("employeeContact").value,
-                birth_date: document.getElementById("employeeBirth").value,
-                hire_date: document.getElementById("employeeHire").value,
-                health_expiry: document.getElementById("employeeHealth").value,
-                password: document.getElementById("employeePass").value
+                role: document.getElementById('employeeRole').value,
+                hourly_rate: parseInt(document.getElementById('employeeHourlyRate').value),
+                contact: document.getElementById('employeeContact').value,
+                birth_date: document.getElementById('employeeBirth').value,
+                hire_date: document.getElementById('employeeHire').value,
+                health_expiry: document.getElementById('employeeHealth').value,
+                password: document.getElementById('employeePass').value
             };
-            
+
             if (employeeId) {
                 // 수정
                 const index = employees.findIndex(e => e.id === parseInt(employeeId));
