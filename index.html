@@ -511,11 +511,14 @@
                                 <th>직급</th>
                                 <th>시급</th>
                                 <th>연락처</th>
+                                <th>이름</th>
+                                <th>직급</th>
+                                <th>시급</th>
+                                <th>연락처</th>
+                                <th>생년월일</th>
+                                <th>입사일</th>
+                                <th>보건증 유효기간</th>
                                 <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employeeTableBody">
-                            <!-- 직원 목록이 여기에 표시됩니다 -->
                         </tbody>
                     </table>
                 </div>
@@ -666,6 +669,22 @@
                     <input type="tel" class="form-control" id="employeeContact" placeholder="010-0000-0000" required>
                 </div>
                 <div style="text-align: right;">
+                <div class="form-group">
+                    <label class="form-label">생년월일</label>
+                    <input type="date" class="form-control" id="employeeBirth" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">입사일</label>
+                    <input type="date" class="form-control" id="employeeHire" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">보건증 유효기간</label>
+                    <input type="date" class="form-control" id="employeeHealth" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비밀번호(6자리 숫자)</label>
+                    <input type="password" class="form-control" id="employeePass" pattern="\d{6}" required>
+                </div>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">취소</button>
                     <button type="submit" class="btn btn-primary">저장</button>
                 </div>
@@ -718,22 +737,15 @@
             } else {
                 // 기본 직원 데이터
                 employees = [
-                    { id: 1, name: '김대표', role: '대표', hourly_rate: 0, contact: '010-1234-5678' },
-                    { id: 2, name: '이매니저', role: '매니저', hourly_rate: 12000, contact: '010-2345-6789' },
-                    { id: 3, name: '박직원', role: '직원', hourly_rate: 10000, contact: '010-3456-7890' },
-                    { id: 4, name: '최직원', role: '직원', hourly_rate: 10000, contact: '010-4567-8901' },
-                    { id: 5, name: '정직원', role: '직원', hourly_rate: 10000, contact: '010-5678-9012' },
-                    { id: 6, name: '강직원', role: '직원', hourly_rate: 10000, contact: '010-6789-0123' },
-                    { id: 7, name: '오직원', role: '직원', hourly_rate: 10000, contact: '010-7890-1234' }
+                employees = [
+                    { id: 1, name: "김대표", role: "대표", hourly_rate: 0, contact: "010-1234-5678", birth_date: "1980-01-01", hire_date: "2010-01-01", health_expiry: "2030-12-31", password: "000000" },
+                    { id: 2, name: "이매니저", role: "매니저", hourly_rate: 12000, contact: "010-2345-6789", birth_date: "1985-02-02", hire_date: "2015-03-01", health_expiry: "2030-12-31", password: "111111" },
+                    { id: 3, name: "박직원", role: "직원", hourly_rate: 10000, contact: "010-3456-7890", birth_date: "1990-03-03", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "222222" },
+                    { id: 4, name: "최직원", role: "직원", hourly_rate: 10000, contact: "010-4567-8901", birth_date: "1991-04-04", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "333333" },
+                    { id: 5, name: "정직원", role: "직원", hourly_rate: 10000, contact: "010-5678-9012", birth_date: "1992-05-05", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "444444" },
+                    { id: 6, name: "강직원", role: "직원", hourly_rate: 10000, contact: "010-6789-0123", birth_date: "1993-06-06", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "555555" },
+                    { id: 7, name: "오직원", role: "직원", hourly_rate: 10000, contact: "010-7890-1234", birth_date: "1994-07-07", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "666666" }
                 ];
-                localStorage.setItem('employees', JSON.stringify(employees));
-            }
-
-            // 스케줄 데이터 로드
-            const storedSchedule = localStorage.getItem('scheduleData');
-            if (storedSchedule) {
-                scheduleData = JSON.parse(storedSchedule);
-            } else {
                 // 기본 스케줄 생성
                 generateDefaultSchedule();
             }
@@ -832,11 +844,16 @@
             
             employees.forEach(emp => {
                 const row = document.createElement('tr');
+            employees.forEach(emp => {
+                const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${emp.name}</td>
                     <td>${emp.role}</td>
                     <td>${emp.hourly_rate.toLocaleString()}원</td>
                     <td>${emp.contact}</td>
+                    <td>${emp.birth_date}</td>
+                    <td>${emp.hire_date}</td>
+                    <td>${emp.health_expiry}</td>
                     <td>
                         <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="editEmployee(${emp.id})">수정</button>
                         <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteEmployee(${emp.id})">삭제</button>
@@ -844,7 +861,6 @@
                 `;
                 tbody.appendChild(row);
             });
-        }
 
         // 직원 추가 모달 표시
         function showAddEmployeeModal() {
@@ -854,6 +870,10 @@
             document.getElementById('employeeRole').value = '직원';
             document.getElementById('employeeHourlyRate').value = '10000';
             document.getElementById('employeeContact').value = '';
+            document.getElementById("employeeBirth").value = "";
+            document.getElementById("employeeHire").value = "";
+            document.getElementById("employeeHealth").value = "";
+            document.getElementById("employeePass").value = "";
             document.getElementById('employeeModal').style.display = 'block';
         }
 
@@ -869,6 +889,10 @@
             document.getElementById('employeeHourlyRate').value = employee.hourly_rate;
             document.getElementById('employeeContact').value = employee.contact;
             document.getElementById('employeeModal').style.display = 'block';
+            document.getElementById("employeeBirth").value = employee.birth_date || "";
+            document.getElementById("employeeHire").value = employee.hire_date || "";
+            document.getElementById("employeeHealth").value = employee.health_expiry || "";
+            document.getElementById("employeePass").value = employee.password || "";
         }
 
         // 직원 저장
@@ -877,12 +901,16 @@
             
             const employeeData = {
                 name: document.getElementById('employeeName').value,
-                role: document.getElementById('employeeRole').value,
-                hourly_rate: parseInt(document.getElementById('employeeHourlyRate').value),
-                contact: document.getElementById('employeeContact').value
+            const employeeData = {
+                name: document.getElementById("employeeName").value,
+                role: document.getElementById("employeeRole").value,
+                hourly_rate: parseInt(document.getElementById("employeeHourlyRate").value),
+                contact: document.getElementById("employeeContact").value,
+                birth_date: document.getElementById("employeeBirth").value,
+                hire_date: document.getElementById("employeeHire").value,
+                health_expiry: document.getElementById("employeeHealth").value,
+                password: document.getElementById("employeePass").value
             };
-            
-            const employeeId = document.getElementById('employeeId').value;
             
             if (employeeId) {
                 // 수정
