@@ -521,14 +521,13 @@
                                 <th>직급</th>
                                 <th>시급</th>
                                 <th>연락처</th>
-                                <th>이름</th>
-                                <th>직급</th>
-                                <th>시급</th>
-                                <th>연락처</th>
                                 <th>생년월일</th>
                                 <th>입사일</th>
                                 <th>보건증 유효기간</th>
                                 <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody">
                         </tbody>
                     </table>
                 </div>
@@ -574,13 +573,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">희망 근무 시간</label>
-                    <select class="form-control" id="requestedShift" required>
-                        <option value="">선택하세요</option>
-                        <option value="09:00-14:00">오전 (09:00-14:00)</option>
-                        <option value="14:00-20:00">오후 (14:00-20:00)</option>
-                        <option value="09:00-20:00">종일 (09:00-20:00)</option>
-                        <option value="off">휴무</option>
-                    </select>
+                    <select class="form-control" id="requestedShift" required></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">변경 사유</label>
@@ -607,20 +600,7 @@
             </div>
             <div id="dayScheduleEdit" style="display: none;">
                 <h4 id="editDateDisplay"></h4>
-                <div style="display: grid; gap: 1rem;">
-                    <div class="card" style="padding: 1rem;">
-                        <h5>오전 근무 (09:00-14:00)</h5>
-                        <select class="form-control" id="morningEmployee">
-                            <option value="">미배정</option>
-                        </select>
-                    </div>
-                    <div class="card" style="padding: 1rem;">
-                        <h5>오후 근무 (14:00-20:00)</h5>
-                        <select class="form-control" id="afternoonEmployee">
-                            <option value="">미배정</option>
-                        </select>
-                    </div>
-                </div>
+                <div id="shiftEditContainer" style="display: grid; gap: 1rem;"></div>
                 <div style="margin-top: 1rem; text-align: right;">
                     <button class="btn btn-primary" onclick="saveSchedule()">저장</button>
                     <button class="btn btn-secondary" onclick="closeModal('scheduleEditModal')">취소</button>
@@ -709,6 +689,33 @@
         let scheduleData = {};
         let employees = [];
         let scheduleRequests = [];
+        let shiftDefinitions = [];
+        const defaultShiftDefinitions = [
+            {
+                key: 'open',
+                label: '오픈',
+                weekday: { start: '09:00', end: '15:00' },
+                weekend: { start: '10:00', end: '16:00' }
+            },
+            {
+                key: 'middleA',
+                label: '미들 A',
+                weekday: { start: '10:00', end: '16:00' },
+                weekend: { start: '12:00', end: '18:00' }
+            },
+            {
+                key: 'middleB',
+                label: '미들 B',
+                weekday: { start: '15:00', end: '21:00' },
+                weekend: { start: '15:00', end: '21:00' }
+            },
+            {
+                key: 'close',
+                label: '마감',
+                weekday: { start: '19:00', end: '22:00' },
+                weekend: { start: '18:00', end: '22:00' }
+            }
+        ];
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -756,7 +763,21 @@
                     { id: 7, name: "오직원", role: "직원", hourly_rate: 10000, contact: "010-7890-1234", birth_date: "1994-07-07", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "666666" }
                 ];
                 localStorage.setItem('employees', JSON.stringify(employees));
-                // 기본 스케줄 생성
+            }
+
+            const storedShiftDefs = localStorage.getItem('shiftDefinitions');
+            if (storedShiftDefs) {
+                shiftDefinitions = JSON.parse(storedShiftDefs);
+            } else {
+                shiftDefinitions = defaultShiftDefinitions;
+                localStorage.setItem('shiftDefinitions', JSON.stringify(shiftDefinitions));
+            }
+
+            // 스케줄 데이터 로드
+            const storedSchedule = localStorage.getItem('scheduleData');
+            if (storedSchedule) {
+                scheduleData = JSON.parse(storedSchedule);
+            } else {
                 generateDefaultSchedule();
             }
 
@@ -773,30 +794,28 @@
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - 7); // 일주일 전부터
 
+            const workingEmployees = employees.filter(emp => emp.role !== '대표');
+            let empIndex = 0;
+
             for (let i = 0; i < days; i++) {
                 const date = new Date(startDate);
                 date.setDate(date.getDate() + i);
                 const dateStr = formatDateForInput(date);
-                
-                // 요일별 기본 스케줄 패턴
-                const dayOfWeek = date.getDay();
-                const morningEmployees = [2, 3, 4]; // 매니저와 직원들
-                const afternoonEmployees = [5, 6, 7]; // 다른 직원들
-                
-                scheduleData[dateStr] = {
-                    morning: {
-                        employee_id: morningEmployees[i % morningEmployees.length],
-                        start: '09:00',
-                        end: '14:00'
-                    },
-                    afternoon: {
-                        employee_id: afternoonEmployees[i % afternoonEmployees.length],
-                        start: '14:00',
-                        end: '20:00'
-                    }
-                };
+
+                scheduleData[dateStr] = {};
+                const shifts = getShiftTemplates(date);
+
+                shifts.forEach((shift, idx) => {
+                    const employee = workingEmployees[(empIndex + idx) % workingEmployees.length];
+                    scheduleData[dateStr][shift.key] = {
+                        employee_id: employee.id,
+                        start: shift.start,
+                        end: shift.end
+                    };
+                });
+                empIndex++;
             }
-            
+
             localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
         }
 
@@ -953,13 +972,12 @@
             
             // 관련 스케줄도 정리 (선택사항)
             Object.keys(scheduleData).forEach(date => {
-                ['morning', 'afternoon'].forEach(shift => {
-                    if (scheduleData[date][shift]?.employee_id === id) {
-                        delete scheduleData[date][shift];
+                shiftDefinitions.forEach(def => {
+                    if (scheduleData[date][def.key]?.employee_id === id) {
+                        delete scheduleData[date][def.key];
                     }
                 });
-                
-                if (!scheduleData[date].morning && !scheduleData[date].afternoon) {
+                if (Object.keys(scheduleData[date]).length === 0) {
                     delete scheduleData[date];
                 }
             });
@@ -1002,13 +1020,10 @@
                 }
             }
             
-            // 시간대별 행 생성
-            const timeSlots = [
-                { label: '오전 (09:00-14:00)', key: 'morning' },
-                { label: '오후 (14:00-20:00)', key: 'afternoon' }
-            ];
-            
-            timeSlots.forEach(slot => {
+            // 근무 파트별 행 생성
+            const shiftRows = shiftDefinitions.map(def => ({ label: def.label, key: def.key }));
+
+            shiftRows.forEach(slot => {
                 const row = document.createElement('tr');
                 row.innerHTML = `<td><strong>${slot.label}</strong></td>`;
                 
@@ -1020,7 +1035,8 @@
                     
                     const cell = document.createElement('td');
                     const schedule = scheduleData[dateStr]?.[slot.key];
-                    
+                    const shiftInfo = getShiftTemplates(date).find(s => s.key === slot.key);
+
                     if (schedule) {
                         const employee = employees.find(e => e.id === schedule.employee_id);
                         cell.innerHTML = `
@@ -1029,10 +1045,10 @@
                                 <small>${schedule.start} - ${schedule.end}</small>
                             </div>
                         `;
-                        
-                        // 변경 요청이 있는지 확인
-                        const hasRequest = scheduleRequests.some(r => 
-                            r.requested_date === dateStr && 
+                    
+                    // 변경 요청이 있는지 확인
+                        const hasRequest = scheduleRequests.some(r =>
+                            r.requested_date === dateStr &&
                             r.status === 'pending'
                         );
                         
@@ -1040,7 +1056,7 @@
                             cell.innerHTML += '<br><span class="status status-pending">변경 요청중</span>';
                         }
                     } else {
-                        cell.innerHTML = '<span style="color: #999;">-</span>';
+                        cell.innerHTML = `<span style="color: #999;">${shiftInfo.start}-${shiftInfo.end}</span>`;
                     }
                     
                     row.appendChild(cell);
@@ -1061,11 +1077,17 @@
         function showScheduleRequestModal() {
             const modal = document.getElementById('scheduleRequestModal');
             modal.style.display = 'block';
-            
+
             // 오늘 날짜를 기본값으로 설정
             const today = new Date();
             document.getElementById('requestDate').value = formatDateForInput(today);
             document.getElementById('requestDate').min = formatDateForInput(today);
+
+            const shiftSelect = document.getElementById('requestedShift');
+            const shifts = getShiftTemplates(today);
+            shiftSelect.innerHTML = '<option value="">선택하세요</option>' +
+                shifts.map(s => `<option value="${s.key}">${s.label} (${s.start}-${s.end})</option>`).join('') +
+                '<option value="off">휴무</option>';
         }
 
         // 모달 닫기
@@ -1117,19 +1139,22 @@
                 return;
             }
             
-            pendingList.innerHTML = pendingRequests.map(request => `
+            pendingList.innerHTML = pendingRequests.map(request => {
+                const info = request.requested_shift === 'off' ? null : getShiftTemplates(request.requested_date).find(s => s.key === request.requested_shift);
+                const requestedText = request.requested_shift === 'off' ? '휴무' : `${info.label} (${info.start}-${info.end})`;
+                return `
                 <div class="card" style="margin-bottom: 1rem; padding: 1rem;">
                     <h4>${request.employee_name}님의 요청</h4>
                     <p><strong>날짜:</strong> ${request.requested_date}</p>
-                    <p><strong>현재:</strong> ${request.original_shift} → <strong>변경:</strong> ${request.requested_shift}</p>
+                    <p><strong>현재:</strong> ${request.original_shift} → <strong>변경:</strong> ${requestedText}</p>
                     <p><strong>사유:</strong> ${request.reason}</p>
                     <p><small>요청일시: ${new Date(request.request_date).toLocaleString()}</small></p>
                     <div style="margin-top: 1rem;">
                         <button class="btn btn-success" onclick="approveRequest(${request.id})">승인</button>
                         <button class="btn btn-danger" onclick="rejectRequest(${request.id})">거절</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         // 요청 승인
@@ -1165,53 +1190,34 @@
         // 승인된 요청으로 스케줄 업데이트
         function updateScheduleWithRequest(request) {
             const date = request.requested_date;
-            
+
             if (request.requested_shift === 'off') {
-                // 휴무 처리
                 if (scheduleData[date]) {
-                    // 기존 스케줄에서 해당 직원 제거
                     Object.keys(scheduleData[date]).forEach(shift => {
                         if (scheduleData[date][shift].employee_id === request.employee_id) {
-                            scheduleData[date][shift] = { employee_id: null, start: '', end: '' };
+                            delete scheduleData[date][shift];
                         }
                     });
+                    if (Object.keys(scheduleData[date]).length === 0) {
+                        delete scheduleData[date];
+                    }
                 }
             } else {
-                // 시간 변경
-                const [start, end] = request.requested_shift.split('-');
-                
+                const shifts = getShiftTemplates(date);
+                const info = shifts.find(s => s.key === request.requested_shift);
+                if (!info) return;
+
                 if (!scheduleData[date]) {
                     scheduleData[date] = {};
                 }
-                
-                // 오전/오후 구분
-                if (start === '09:00' && end === '14:00') {
-                    scheduleData[date].morning = {
-                        employee_id: request.employee_id,
-                        start: start,
-                        end: end
-                    };
-                } else if (start === '14:00' && end === '20:00') {
-                    scheduleData[date].afternoon = {
-                        employee_id: request.employee_id,
-                        start: start,
-                        end: end
-                    };
-                } else if (start === '09:00' && end === '20:00') {
-                    // 종일 근무
-                    scheduleData[date].morning = {
-                        employee_id: request.employee_id,
-                        start: '09:00',
-                        end: '14:00'
-                    };
-                    scheduleData[date].afternoon = {
-                        employee_id: request.employee_id,
-                        start: '14:00',
-                        end: '20:00'
-                    };
-                }
+
+                scheduleData[date][request.requested_shift] = {
+                    employee_id: request.employee_id,
+                    start: info.start,
+                    end: info.end
+                };
             }
-            
+
             localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
         }
 
@@ -1238,23 +1244,41 @@
             return new Date(d.setDate(diff));
         }
 
+        function getShiftTemplates(date) {
+            const d = new Date(date);
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+            return shiftDefinitions.map(def => {
+                const times = isWeekend ? def.weekend : def.weekday;
+                return { key: def.key, label: def.label, start: times.start, end: times.end };
+            });
+        }
+
         // 스케줄 편집 모달 표시
         function showScheduleEditModal() {
             const modal = document.getElementById('scheduleEditModal');
             modal.style.display = 'block';
-            
-            // 직원 목록 로드
-            const morningSelect = document.getElementById('morningEmployee');
-            const afternoonSelect = document.getElementById('afternoonEmployee');
-            
-            const employeeOptions = '<option value="">미배정</option>' + 
+
+            const container = document.getElementById('shiftEditContainer');
+            const employeeOptions = '<option value="">미배정</option>' +
                 employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.role})</option>`).join('');
-            
-            morningSelect.innerHTML = employeeOptions;
-            afternoonSelect.innerHTML = employeeOptions;
-            
-            // 오늘 날짜 설정
+
+            container.innerHTML = '';
             const today = new Date();
+            const shifts = getShiftTemplates(today);
+            shifts.forEach(shift => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.padding = '1rem';
+                div.innerHTML = `<h5>${shift.label} (${shift.start}-${shift.end})</h5>`;
+                const select = document.createElement('select');
+                select.className = 'form-control shift-select';
+                select.setAttribute('data-shift', shift.key);
+                select.innerHTML = employeeOptions;
+                div.appendChild(select);
+                container.appendChild(div);
+            });
+
+            // 오늘 날짜 설정
             document.getElementById('editDate').value = formatDateForInput(today);
             document.getElementById('batchStartDate').value = formatDateForInput(today);
             
@@ -1271,48 +1295,56 @@
             document.getElementById('dayScheduleEdit').style.display = 'block';
             document.getElementById('editDateDisplay').textContent = formatDate(new Date(selectedDate));
             
-            const schedule = scheduleData[selectedDate];
-            if (schedule) {
-                document.getElementById('morningEmployee').value = schedule.morning?.employee_id || '';
-                document.getElementById('afternoonEmployee').value = schedule.afternoon?.employee_id || '';
-            } else {
-                document.getElementById('morningEmployee').value = '';
-                document.getElementById('afternoonEmployee').value = '';
-            }
+            const container = document.getElementById('shiftEditContainer');
+            const employeeOptions = '<option value="">미배정</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.role})</option>`).join('');
+            container.innerHTML = '';
+
+            const shifts = getShiftTemplates(selectedDate);
+            const schedule = scheduleData[selectedDate] || {};
+
+            shifts.forEach(shift => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.padding = '1rem';
+                div.innerHTML = `<h5>${shift.label} (${shift.start}-${shift.end})</h5>`;
+                const select = document.createElement('select');
+                select.className = 'form-control shift-select';
+                select.setAttribute('data-shift', shift.key);
+                select.innerHTML = employeeOptions;
+                select.value = schedule[shift.key]?.employee_id || '';
+                div.appendChild(select);
+                container.appendChild(div);
+            });
         }
 
         // 스케줄 저장
         function saveSchedule() {
             const selectedDate = document.getElementById('editDate').value;
-            const morningEmployeeId = document.getElementById('morningEmployee').value;
-            const afternoonEmployeeId = document.getElementById('afternoonEmployee').value;
-            
             if (!scheduleData[selectedDate]) {
                 scheduleData[selectedDate] = {};
             }
-            
-            if (morningEmployeeId) {
-                scheduleData[selectedDate].morning = {
-                    employee_id: parseInt(morningEmployeeId),
-                    start: '09:00',
-                    end: '14:00'
-                };
-            } else {
-                delete scheduleData[selectedDate].morning;
-            }
-            
-            if (afternoonEmployeeId) {
-                scheduleData[selectedDate].afternoon = {
-                    employee_id: parseInt(afternoonEmployeeId),
-                    start: '14:00',
-                    end: '20:00'
-                };
-            } else {
-                delete scheduleData[selectedDate].afternoon;
-            }
-            
-            // 빈 날짜는 제거
-            if (!scheduleData[selectedDate].morning && !scheduleData[selectedDate].afternoon) {
+
+            const selects = document.querySelectorAll('#shiftEditContainer .shift-select');
+            const shifts = getShiftTemplates(selectedDate);
+
+            selects.forEach(select => {
+                const key = select.getAttribute('data-shift');
+                const empId = select.value;
+                const shiftInfo = shifts.find(s => s.key === key);
+
+                if (empId) {
+                    scheduleData[selectedDate][key] = {
+                        employee_id: parseInt(empId),
+                        start: shiftInfo.start,
+                        end: shiftInfo.end
+                    };
+                } else {
+                    delete scheduleData[selectedDate][key];
+                }
+            });
+
+            if (Object.keys(scheduleData[selectedDate]).length === 0) {
                 delete scheduleData[selectedDate];
             }
             
@@ -1347,26 +1379,22 @@
             // 날짜별로 스케줄 생성
             let employeeIndex = 0;
             const currentDate = new Date(startDate);
-            
+
             while (currentDate <= endDate) {
                 const dateStr = formatDateForInput(currentDate);
-                const dayOfWeek = currentDate.getDay();
-                
-                // 주말에는 인원을 줄일 수도 있음 (추후 옵션으로 제공 가능)
-                scheduleData[dateStr] = {
-                    morning: {
-                        employee_id: workingEmployees[employeeIndex % workingEmployees.length].id,
-                        start: '09:00',
-                        end: '14:00'
-                    },
-                    afternoon: {
-                        employee_id: workingEmployees[(employeeIndex + 1) % workingEmployees.length].id,
-                        start: '14:00',
-                        end: '20:00'
-                    }
-                };
-                
-                employeeIndex += 2;
+                const shifts = getShiftTemplates(currentDate);
+                scheduleData[dateStr] = {};
+
+                shifts.forEach((shift, idx) => {
+                    const emp = workingEmployees[(employeeIndex + idx) % workingEmployees.length];
+                    scheduleData[dateStr][shift.key] = {
+                        employee_id: emp.id,
+                        start: shift.start,
+                        end: shift.end
+                    };
+                });
+
+                employeeIndex += shifts.length;
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
@@ -1380,24 +1408,28 @@
         document.getElementById('requestDate').addEventListener('change', function() {
             const selectedDate = this.value;
             const schedule = scheduleData[selectedDate];
-            let currentShift = '미정';
-            
+            let currentShift = '휴무';
+
             if (schedule) {
-                const morningEmployee = schedule.morning?.employee_id === currentUser.id;
-                const afternoonEmployee = schedule.afternoon?.employee_id === currentUser.id;
-                
-                if (morningEmployee && afternoonEmployee) {
-                    currentShift = '종일 (09:00-20:00)';
-                } else if (morningEmployee) {
-                    currentShift = '오전 (09:00-14:00)';
-                } else if (afternoonEmployee) {
-                    currentShift = '오후 (14:00-20:00)';
-                } else {
-                    currentShift = '휴무';
-                }
+                const parts = [];
+                const shifts = getShiftTemplates(selectedDate);
+                shifts.forEach(s => {
+                    if (schedule[s.key]?.employee_id === currentUser.id) {
+                        parts.push(`${s.label} (${s.start}-${s.end})`);
+                    }
+                });
+            if (parts.length > 0) {
+                currentShift = parts.join(', ');
             }
-            
+            }
+
             document.getElementById('currentShift').value = currentShift;
+
+            const shiftSelect = document.getElementById('requestedShift');
+            const shifts = getShiftTemplates(selectedDate);
+            shiftSelect.innerHTML = '<option value="">선택하세요</option>' +
+                shifts.map(s => `<option value="${s.key}">${s.label} (${s.start}-${s.end})</option>`).join('') +
+                '<option value="off">휴무</option>';
         });
 
         // ESC 키로 모달 닫기
@@ -1419,11 +1451,13 @@
                 alert('스케줄 편집 권한이 없습니다.');
                 return;
             }
-            
+
             const employee = employees.find(e => e.id === currentEmployeeId);
             const employeeName = employee ? employee.name : '미배정';
-            
-            const newEmployeeName = prompt(`${formatDate(new Date(date))} ${shift === 'morning' ? '오전' : '오후'} 근무\n현재: ${employeeName}\n\n새로운 직원 이름을 입력하세요 (취소: 미배정):`);
+
+            const shiftInfo = getShiftTemplates(date).find(s => s.key === shift);
+
+            const newEmployeeName = prompt(`${formatDate(new Date(date))} ${shiftInfo.label} 근무 (${shiftInfo.start}-${shiftInfo.end})\n현재: ${employeeName}\n\n새로운 직원 이름을 입력하세요 (취소: 미배정):`);
             
             if (newEmployeeName === null) return;
             
@@ -1431,7 +1465,7 @@
                 // 배정 취소
                 if (scheduleData[date] && scheduleData[date][shift]) {
                     delete scheduleData[date][shift];
-                    if (!scheduleData[date].morning && !scheduleData[date].afternoon) {
+                    if (Object.keys(scheduleData[date]).length === 0) {
                         delete scheduleData[date];
                     }
                 }
@@ -1447,10 +1481,11 @@
                     scheduleData[date] = {};
                 }
                 
+                const info = getShiftTemplates(date).find(s => s.key === shift);
                 scheduleData[date][shift] = {
                     employee_id: newEmployee.id,
-                    start: shift === 'morning' ? '09:00' : '14:00',
-                    end: shift === 'morning' ? '14:00' : '20:00'
+                    start: info.start,
+                    end: info.end
                 };
             }
             
@@ -1464,6 +1499,7 @@
                 employees: employees,
                 scheduleData: scheduleData,
                 scheduleRequests: scheduleRequests,
+                shiftDefinitions: shiftDefinitions,
                 exportDate: new Date().toISOString()
             };
             
@@ -1496,6 +1532,11 @@
                     if (data.scheduleRequests) {
                         scheduleRequests = data.scheduleRequests;
                         localStorage.setItem('scheduleRequests', JSON.stringify(scheduleRequests));
+                    }
+
+                    if (data.shiftDefinitions) {
+                        shiftDefinitions = data.shiftDefinitions;
+                        localStorage.setItem('shiftDefinitions', JSON.stringify(shiftDefinitions));
                     }
                     
                     alert('데이터가 성공적으로 복원되었습니다.');
