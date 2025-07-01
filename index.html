@@ -440,6 +440,16 @@
                                 <th>토요일</th>
                                 <th>일요일</th>
                             </tr>
+                            <tr id="dateRow">
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
                         </thead>
                         <tbody id="scheduleTableBody">
                             <!-- 스케줄 데이터가 여기에 동적으로 추가됩니다 -->
@@ -737,7 +747,6 @@
             } else {
                 // 기본 직원 데이터
                 employees = [
-                employees = [
                     { id: 1, name: "김대표", role: "대표", hourly_rate: 0, contact: "010-1234-5678", birth_date: "1980-01-01", hire_date: "2010-01-01", health_expiry: "2030-12-31", password: "000000" },
                     { id: 2, name: "이매니저", role: "매니저", hourly_rate: 12000, contact: "010-2345-6789", birth_date: "1985-02-02", hire_date: "2015-03-01", health_expiry: "2030-12-31", password: "111111" },
                     { id: 3, name: "박직원", role: "직원", hourly_rate: 10000, contact: "010-3456-7890", birth_date: "1990-03-03", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "222222" },
@@ -746,6 +755,7 @@
                     { id: 6, name: "강직원", role: "직원", hourly_rate: 10000, contact: "010-6789-0123", birth_date: "1993-06-06", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "555555" },
                     { id: 7, name: "오직원", role: "직원", hourly_rate: 10000, contact: "010-7890-1234", birth_date: "1994-07-07", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "666666" }
                 ];
+                localStorage.setItem('employees', JSON.stringify(employees));
                 // 기본 스케줄 생성
                 generateDefaultSchedule();
             }
@@ -976,9 +986,21 @@
         }
 
         // 스케줄 로드
-        function loadSchedule() {
-            const tbody = document.getElementById('scheduleTableBody');
-            tbody.innerHTML = '';
+       function loadSchedule() {
+           const tbody = document.getElementById('scheduleTableBody');
+           tbody.innerHTML = '';
+
+            const dateRow = document.getElementById('dateRow');
+            if (dateRow) {
+                dateRow.innerHTML = '<th></th>';
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(date.getDate() + i);
+                    const cell = document.createElement('th');
+                    cell.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+                    dateRow.appendChild(cell);
+                }
+            }
             
             // 시간대별 행 생성
             const timeSlots = [
