@@ -369,9 +369,42 @@
             font-size: 3rem;
             margin-bottom: 1rem;
         }
+
+        /* 로그인 페이지 */
+        #login-page {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f2ed;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
     </style>
 </head>
 <body>
+    <div id="login-page" class="page" style="display:none;">
+        <div class="login-container">
+            <h2 style="margin-bottom:1rem;">로그인</h2>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label class="form-label">이름</label>
+                    <input type="text" id="loginName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비밀번호</label>
+                    <input type="text" id="loginPassword" class="form-control" pattern="\d{6}" inputmode="numeric" required>
+                </div>
+                <button type="submit" class="btn btn-primary">로그인</button>
+            </form>
+        </div>
+    </div>
     <!-- 헤더 -->
     <header class="header">
         <div class="header-content">
@@ -383,6 +416,7 @@
                 <span id="currentUser">김대표</span>
                 <span>|</span>
                 <span id="currentDate"></span>
+                <button class="btn btn-secondary" style="margin-left:0.5rem;" onclick="logout()">로그아웃</button>
             </div>
         </div>
     </header>
@@ -672,7 +706,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">비밀번호(6자리 숫자)</label>
-                    <input type="password" class="form-control" id="employeePass" pattern="\d{6}" required>
+                    <input type="text" class="form-control" id="employeePass" inputmode="numeric" pattern="\d{6}" required>
                 </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">취소</button>
@@ -724,25 +758,22 @@
 
         // 앱 초기화
         function initializeApp() {
-            // 현재 날짜 설정
             const today = new Date();
-            document.getElementById('currentDate').textContent = formatDate(today);
-            
-            // 이번 주 월요일로 설정
+            document.getElementById("currentDate").textContent = formatDate(today);
             currentWeekStart = getMonday(today);
-            document.getElementById('weekSelector').value = formatDateForInput(currentWeekStart);
-            
-            // 초기 데이터 로드
+            document.getElementById("weekSelector").value = formatDateForInput(currentWeekStart);
             loadInitialData();
-            
-            // 네비게이션 이벤트 설정
             setupNavigation();
-            
-            // 스케줄 로드
-            loadSchedule();
-            
-            // 현재 사용자 설정 (임시)
-            setCurrentUser({ id: 1, name: '김대표', role: '대표' });
+            const stored = localStorage.getItem("currentUser");
+            if (stored) {
+                const user = JSON.parse(stored);
+                setCurrentUser(user);
+                showMainUI(true);
+                loadSchedule();
+            } else {
+                showMainUI(false);
+                document.getElementById("login-page").style.display = "flex";
+            }
         }
 
         // 초기 데이터 로드
@@ -832,6 +863,12 @@
             } else if (user.role === '매니저') {
                 document.getElementById('scheduleEditBtn').style.display = 'inline-block';
             }
+        }
+
+        function showMainUI(show) {
+            document.querySelector(".header").style.display = show ? "block" : "none";
+            document.querySelector(".nav").style.display = show ? "block" : "none";
+            document.querySelector("main.container").style.display = show ? "block" : "none";
         }
 
         // 네비게이션 설정
@@ -1548,6 +1585,29 @@
             };
             reader.readAsText(file);
         }
+        function login(event) {
+            event.preventDefault();
+            const name = document.getElementById("loginName").value.trim();
+            const pass = document.getElementById("loginPassword").value;
+            const user = employees.find(e => e.name === name && e.password === pass);
+            if (user) {
+                localStorage.setItem("currentUser", JSON.stringify(user));
+                setCurrentUser(user);
+                showMainUI(true);
+                document.getElementById("login-page").style.display = "none";
+                loadSchedule();
+            } else {
+                alert("이름 또는 비밀번호가 올바르지 않습니다.");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("currentUser");
+            currentUser = null;
+            showMainUI(false);
+            document.getElementById("login-page").style.display = "flex";
+        }
+
     </script>
 </body>
 </html>
