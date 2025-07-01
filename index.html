@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카페 관리 시스템</title>
+    <style>
+        /* 전역 스타일 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, sans-serif;
+            background-color: #f5f2ed;
+            color: #3d2f2f;
+            line-height: 1.6;
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            background-color: #6b4423;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background-color: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+
+        /* 네비게이션 */
+        .nav {
+            background-color: #8b6341;
+            padding: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-list {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 1rem;
+            color: white;
+            text-decoration: none;
+            transition: background-color 0.3s;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #6b4423;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* 카드 스타일 */
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            border-bottom: 2px solid #6b4423;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #6b4423;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: #6b4423;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #543519;
+        }
+
+        .btn-secondary {
+            background-color: #d4a574;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #b8935f;
+        }
+
+        .btn-success {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        /* 스케줄 테이블 */
+        .schedule-container {
+            overflow-x: auto;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 0.5rem;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .schedule-table th {
+            background-color: #6b4423;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .schedule-table tr:hover {
+            background-color: #f5f2ed;
+        }
+
+        /* 날짜 선택기 */
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        /* 폼 스타일 */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #6b4423;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #6b4423;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* 알림 배지 */
+        .badge {
+            background-color: #d9534f;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-list {
+                flex-wrap: wrap;
+            }
+
+            .nav-item {
+                flex: 1 1 50%;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .schedule-table {
+                font-size: 0.9rem;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 0.25rem;
+            }
+        }
+
+        /* 로딩 스피너 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6b4423;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 상태 표시 */
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: #f0ad4e;
+            color: white;
+        }
+
+        .status-approved {
+            background-color: #5cb85c;
+            color: white;
+        }
+
+        .status-rejected {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        /* 빈 상태 메시지 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 로그인 페이지 */
+        #login-page {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f2ed;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-page" class="page" style="display:none;">
+        <div class="login-container">
+            <h2 style="margin-bottom:1rem;">로그인</h2>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label class="form-label">이름</label>
+                    <input type="text" id="loginName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비밀번호</label>
+                    <input type="text" id="loginPassword" class="form-control" pattern="\d{6}" inputmode="numeric" required>
+                </div>
+                <button type="submit" class="btn btn-primary">로그인</button>
+            </form>
+        </div>
+    </div>
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span>☕</span>
+                <span>카페 관리 시스템</span>
+            </div>
+            <div class="user-info">
+                <span id="currentUser">김대표</span>
+                <span>|</span>
+                <span id="currentDate"></span>
+                <button class="btn btn-secondary" style="margin-left:0.5rem;" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 네비게이션 -->
+    <nav class="nav">
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-page="schedule">📅 스케줄 관리</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="work">⏰ 근무 관리</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="inventory">📦 재고 관리</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="communication">💬 소통</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="settings">⚙️ 설정</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="container">
+        <!-- 스케줄 관리 페이지 -->
+        <div id="schedule-page" class="page">
+            <!-- 스케줄 조회 카드 -->
+            <div class="card" id="weeklyScheduleCard">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📅</span>
+                        <span>주간 스케줄</span>
+                    </h2>
+                </div>
+                <div class="date-controls">
+                    <button class="btn btn-secondary" id="prevPeriodBtn" onclick="changeWeek(-1)">◀ 이전 주</button>
+                    <input type="date" id="weekSelector" class="date-input" onchange="loadSchedule()">
+                    <button class="btn btn-secondary" id="nextPeriodBtn" onclick="changeWeek(1)">다음 주 ▶</button>
+                    <button class="btn btn-secondary" id="viewToggleBtn" onclick="toggleScheduleView()">월간 보기</button>
+                </div>
+                <div class="schedule-container" id="weeklySchedule">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>시간</th>
+                                <th>월요일</th>
+                                <th>화요일</th>
+                                <th>수요일</th>
+                                <th>목요일</th>
+                                <th>금요일</th>
+                                <th>토요일</th>
+                                <th>일요일</th>
+                            </tr>
+                            <tr id="dateRow">
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody">
+                            <!-- 스케줄 데이터가 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" id="monthlyScheduleCard" style="display:none;">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📅</span>
+                        <span>월간 스케줄</span>
+                    </h2>
+                </div>
+                <div class="date-controls">
+                    <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ 이전 달</button>
+                    <input type="month" id="monthSelector" class="date-input" onchange="loadMonthlySchedule()">
+                    <button class="btn btn-secondary" onclick="changeMonth(1)">다음 달 ▶</button>
+                    <button class="btn btn-secondary" onclick="toggleScheduleView()">주간 보기</button>
+                    <button class="btn btn-primary" onclick="showScheduleRequestModal()">스케줄 변경 요청</button>
+                    <button class="btn btn-primary" id="scheduleEditBtn" style="display: none;" onclick="showScheduleEditModal()">스케줄 편집</button>
+                </div>
+                <div class="schedule-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr id="monthlyHeader">
+                                <th>날짜</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 승인 대기 요청 카드 (대표만 표시) -->
+            <div class="card" id="pendingRequestsCard" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>⏳</span>
+                        <span>승인 대기 요청</span>
+                        <span class="badge" id="pendingCount">0</span>
+                    </h2>
+                </div>
+                <div id="pendingRequestsList">
+                    <!-- 승인 대기 요청이 여기에 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 다른 페이지들은 Phase 2에서 구현 -->
+        <div id="work-page" class="page" style="display: none;">
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚧</div>
+                    <p>근무 관리 기능은 준비 중입니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="inventory-page" class="page" style="display: none;">
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚧</div>
+                    <p>재고 관리 기능은 준비 중입니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="communication-page" class="page" style="display: none;">
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚧</div>
+                    <p>소통 기능은 준비 중입니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings-page" class="page" style="display: none;">
+            <!-- 직원 관리 카드 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>👥</span>
+                        <span>직원 관리</span>
+                    </h2>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="showAddEmployeeModal()">+ 직원 추가</button>
+                </div>
+                <div class="schedule-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>이름</th>
+                                <th>직급</th>
+                                <th>시급</th>
+                                <th>연락처</th>
+                                <th>생년월일</th>
+                                <th>입사일</th>
+                                <th>보건증 유효기간</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 시스템 설정 카드 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>⚙️</span>
+                        <span>시스템 설정</span>
+                    </h2>
+                </div>
+                <div style="display: grid; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="exportData()">📥 데이터 백업 다운로드</button>
+                    <div>
+                        <label class="btn btn-secondary" style="margin: 0;">
+                            📤 데이터 복원
+                            <input type="file" accept=".json" onchange="importData(this.files[0])" style="display: none;">
+                        </label>
+                    </div>
+                    <button class="btn btn-danger" onclick="resetSystem()">🔄 시스템 초기화</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 스케줄 변경 요청 모달 -->
+    <div id="scheduleRequestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>스케줄 변경 요청</h3>
+                <button class="modal-close" onclick="closeModal('scheduleRequestModal')">×</button>
+            </div>
+            <form onsubmit="submitScheduleRequest(event)">
+                <div class="form-group">
+                    <label class="form-label">변경 희망 날짜</label>
+                    <input type="date" class="form-control" id="requestDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">현재 근무 시간</label>
+                    <input type="text" class="form-control" id="currentShift" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">희망 근무 시간</label>
+                    <select class="form-control" id="requestedShift" required></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">변경 사유</label>
+                    <textarea class="form-control" id="requestReason" required></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleRequestModal')">취소</button>
+                    <button type="submit" class="btn btn-primary">요청 제출</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 스케줄 편집 모달 (대표/매니저 전용) -->
+    <div id="scheduleEditModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>스케줄 편집</h3>
+                <button class="modal-close" onclick="closeModal('scheduleEditModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">편집할 날짜 선택</label>
+                <input type="date" class="form-control" id="editDate" onchange="loadDaySchedule()">
+            </div>
+            <div id="dayScheduleEdit" style="display: none;">
+                <h4 id="editDateDisplay"></h4>
+                <div id="shiftEditContainer" style="display: grid; gap: 1rem;"></div>
+                <div style="margin-top: 1rem; text-align: right;">
+                    <button class="btn btn-primary" onclick="saveSchedule()">저장</button>
+                    <button class="btn btn-secondary" onclick="closeModal('scheduleEditModal')">취소</button>
+                </div>
+            </div>
+            <div style="margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1rem;">
+                <h4>일괄 스케줄 생성</h4>
+                <div class="form-group">
+                    <label class="form-label">시작 날짜</label>
+                    <input type="date" class="form-control" id="batchStartDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">종료 날짜</label>
+                    <input type="date" class="form-control" id="batchEndDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">패턴 선택</label>
+                    <select class="form-control" id="schedulePattern">
+                        <option value="rotation">순환 근무 (자동 배치)</option>
+                        <option value="fixed">고정 근무 (요일별 지정)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="generateBatchSchedule()">일괄 생성</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원 추가/수정 모달 -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="employeeModalTitle">직원 추가</h3>
+                <button class="modal-close" onclick="closeModal('employeeModal')">×</button>
+            </div>
+            <form onsubmit="saveEmployee(event)">
+                <input type="hidden" id="employeeId">
+                <div class="form-group">
+                    <label class="form-label">이름</label>
+                    <input type="text" class="form-control" id="employeeName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">직급</label>
+                    <select class="form-control" id="employeeRole" required>
+                        <option value="직원">직원</option>
+                        <option value="매니저">매니저</option>
+                        <option value="대표">대표</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">시급</label>
+                    <input type="number" class="form-control" id="employeeHourlyRate" required>
+                    <small style="color: #666;">대표는 0원으로 설정하세요</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">연락처</label>
+                    <input type="tel" class="form-control" id="employeeContact" placeholder="010-0000-0000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">생년월일</label>
+                    <input type="date" class="form-control" id="employeeBirth" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">입사일</label>
+                    <input type="date" class="form-control" id="employeeHire" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">보건증 유효기간</label>
+                    <input type="date" class="form-control" id="employeeHealth" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비밀번호(6자리 숫자)</label>
+                    <input type="text" class="form-control" id="employeePass" inputmode="numeric" pattern="\d{6}" required>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let currentUser = null;
+        let currentWeekStart = null;
+        let currentMonth = null;
+        let scheduleView = 'week';
+        let scheduleData = {};
+        let employees = [];
+        let scheduleRequests = [];
+        let shiftDefinitions = [];
+        const defaultShiftDefinitions = [
+            {
+                key: 'open',
+                label: '오픈',
+                weekday: { start: '09:00', end: '15:00' },
+                weekend: { start: '10:00', end: '16:00' }
+            },
+            {
+                key: 'middleA',
+                label: '미들 A',
+                weekday: { start: '10:00', end: '16:00' },
+                weekend: { start: '12:00', end: '18:00' }
+            },
+            {
+                key: 'middleB',
+                label: '미들 B',
+                weekday: { start: '15:00', end: '21:00' },
+                weekend: { start: '15:00', end: '21:00' }
+            },
+            {
+                key: 'close',
+                label: '마감',
+                weekday: { start: '19:00', end: '22:00' },
+                weekend: { start: '18:00', end: '22:00' }
+            }
+        ];
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        // 앱 초기화
+        function initializeApp() {
+            const today = new Date();
+            document.getElementById("currentDate").textContent = formatDate(today);
+            currentWeekStart = getMonday(today);
+            currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById("weekSelector").value = formatDateForInput(currentWeekStart);
+            document.getElementById("monthSelector").value = formatMonthForInput(currentMonth);
+            loadInitialData();
+            setupNavigation();
+            const stored = localStorage.getItem("currentUser");
+            if (stored) {
+                const user = JSON.parse(stored);
+                setCurrentUser(user);
+                showMainUI(true);
+                loadSchedule();
+            } else {
+                showMainUI(false);
+                document.getElementById("login-page").style.display = "flex";
+            }
+        }
+
+        // 초기 데이터 로드
+        function loadInitialData() {
+            // localStorage에서 데이터 로드 또는 기본값 설정
+            const storedEmployees = localStorage.getItem('employees');
+            if (storedEmployees) {
+                employees = JSON.parse(storedEmployees);
+            } else {
+                // 기본 직원 데이터
+                employees = [
+                    { id: 1, name: "김대표", role: "대표", hourly_rate: 0, contact: "010-1234-5678", birth_date: "1980-01-01", hire_date: "2010-01-01", health_expiry: "2030-12-31", password: "000000" },
+                    { id: 2, name: "이매니저", role: "매니저", hourly_rate: 12000, contact: "010-2345-6789", birth_date: "1985-02-02", hire_date: "2015-03-01", health_expiry: "2030-12-31", password: "111111" },
+                    { id: 3, name: "박직원", role: "직원", hourly_rate: 10000, contact: "010-3456-7890", birth_date: "1990-03-03", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "222222" },
+                    { id: 4, name: "최직원", role: "직원", hourly_rate: 10000, contact: "010-4567-8901", birth_date: "1991-04-04", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "333333" },
+                    { id: 5, name: "정직원", role: "직원", hourly_rate: 10000, contact: "010-5678-9012", birth_date: "1992-05-05", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "444444" },
+                    { id: 6, name: "강직원", role: "직원", hourly_rate: 10000, contact: "010-6789-0123", birth_date: "1993-06-06", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "555555" },
+                    { id: 7, name: "오직원", role: "직원", hourly_rate: 10000, contact: "010-7890-1234", birth_date: "1994-07-07", hire_date: "2022-04-01", health_expiry: "2030-12-31", password: "666666" }
+                ];
+                localStorage.setItem('employees', JSON.stringify(employees));
+            }
+
+            const storedShiftDefs = localStorage.getItem('shiftDefinitions');
+            if (storedShiftDefs) {
+                shiftDefinitions = JSON.parse(storedShiftDefs);
+            } else {
+                shiftDefinitions = defaultShiftDefinitions;
+                localStorage.setItem('shiftDefinitions', JSON.stringify(shiftDefinitions));
+            }
+
+            // 스케줄 데이터 로드
+            const storedSchedule = localStorage.getItem('scheduleData');
+            if (storedSchedule) {
+                scheduleData = JSON.parse(storedSchedule);
+            } else {
+                generateDefaultSchedule();
+            }
+
+            // 스케줄 요청 데이터 로드
+            const storedRequests = localStorage.getItem('scheduleRequests');
+            if (storedRequests) {
+                scheduleRequests = JSON.parse(storedRequests);
+            }
+        }
+
+        // 기본 스케줄 생성
+        function generateDefaultSchedule() {
+            const days = 30; // 30일치 스케줄 생성
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7); // 일주일 전부터
+
+            const workingEmployees = employees.filter(emp => emp.role !== '대표');
+            let empIndex = 0;
+
+            for (let i = 0; i < days; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                const dateStr = formatDateForInput(date);
+
+                scheduleData[dateStr] = {};
+                const shifts = getShiftTemplates(date);
+
+                shifts.forEach((shift, idx) => {
+                    const employee = workingEmployees[(empIndex + idx) % workingEmployees.length];
+                    scheduleData[dateStr][shift.key] = {
+                        employee_id: employee.id,
+                        start: shift.start,
+                        end: shift.end,
+                        checkIn: '',
+                        checkOut: ''
+                    };
+                });
+                empIndex++;
+            }
+
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+        }
+
+        // 현재 사용자 설정
+        function setCurrentUser(user) {
+            currentUser = user;
+            document.getElementById('currentUser').textContent = user.name;
+            
+            // 권한에 따른 UI 표시/숨김
+            if (user.role === '대표') {
+                document.getElementById('pendingRequestsCard').style.display = 'block';
+                document.getElementById('scheduleEditBtn').style.display = 'inline-block';
+                loadPendingRequests();
+            } else if (user.role === '매니저') {
+                document.getElementById('scheduleEditBtn').style.display = 'inline-block';
+            }
+        }
+
+        function showMainUI(show) {
+            document.querySelector(".header").style.display = show ? "block" : "none";
+            document.querySelector(".nav").style.display = show ? "block" : "none";
+            document.querySelector("main.container").style.display = show ? "block" : "none";
+        }
+
+        // 네비게이션 설정
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    showPage(page);
+                    
+                    // 활성 탭 스타일 변경
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // 페이지 전환
+        function showPage(pageName) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.style.display = 'none');
+            
+            const targetPage = document.getElementById(`${pageName}-page`);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+                
+                // 설정 페이지로 이동 시 직원 목록 로드
+                if (pageName === 'settings') {
+                    loadEmployeeList();
+                }
+            }
+        }
+
+        // 직원 목록 로드
+        function loadEmployeeList() {
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = '';
+
+            employees.forEach(emp => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${emp.name}</td>
+                    <td>${emp.role}</td>
+                    <td>${emp.hourly_rate.toLocaleString()}원</td>
+                    <td>${emp.contact}</td>
+                    <td>${emp.birth_date || ''}</td>
+                    <td>${emp.hire_date || ''}</td>
+                    <td>${emp.health_expiry || ''}</td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="editEmployee(${emp.id})">수정</button>
+                        <button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteEmployee(${emp.id})">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 직원 추가 모달 표시
+        function showAddEmployeeModal() {
+            document.getElementById('employeeModalTitle').textContent = '직원 추가';
+            document.getElementById('employeeId').value = '';
+            document.getElementById('employeeName').value = '';
+            document.getElementById('employeeRole').value = '직원';
+            document.getElementById('employeeHourlyRate').value = '10000';
+            document.getElementById('employeeContact').value = '';
+            document.getElementById("employeeBirth").value = "";
+            document.getElementById("employeeHire").value = "";
+            document.getElementById("employeeHealth").value = "";
+            document.getElementById("employeePass").value = "";
+            document.getElementById('employeeModal').style.display = 'block';
+        }
+
+        // 직원 수정
+        function editEmployee(id) {
+            const employee = employees.find(e => e.id === id);
+            if (!employee) return;
+            
+            document.getElementById('employeeModalTitle').textContent = '직원 정보 수정';
+            document.getElementById('employeeId').value = employee.id;
+            document.getElementById('employeeName').value = employee.name;
+            document.getElementById('employeeRole').value = employee.role;
+            document.getElementById('employeeHourlyRate').value = employee.hourly_rate;
+            document.getElementById('employeeContact').value = employee.contact;
+            document.getElementById('employeeModal').style.display = 'block';
+            document.getElementById("employeeBirth").value = employee.birth_date || "";
+            document.getElementById("employeeHire").value = employee.hire_date || "";
+            document.getElementById("employeeHealth").value = employee.health_expiry || "";
+            document.getElementById("employeePass").value = employee.password || "";
+        }
+
+        // 직원 저장
+        function saveEmployee(event) {
+            event.preventDefault();
+
+            const employeeId = document.getElementById('employeeId').value;
+            const employeeData = {
+                name: document.getElementById('employeeName').value,
+                role: document.getElementById('employeeRole').value,
+                hourly_rate: parseInt(document.getElementById('employeeHourlyRate').value),
+                contact: document.getElementById('employeeContact').value,
+                birth_date: document.getElementById('employeeBirth').value,
+                hire_date: document.getElementById('employeeHire').value,
+                health_expiry: document.getElementById('employeeHealth').value,
+                password: document.getElementById('employeePass').value
+            };
+
+            if (employeeId) {
+                // 수정
+                const index = employees.findIndex(e => e.id === parseInt(employeeId));
+                if (index !== -1) {
+                    employees[index] = { ...employees[index], ...employeeData };
+                }
+            } else {
+                // 추가
+                const newId = Math.max(...employees.map(e => e.id), 0) + 1;
+                employees.push({ id: newId, ...employeeData });
+            }
+            
+            localStorage.setItem('employees', JSON.stringify(employees));
+            alert('직원 정보가 저장되었습니다.');
+            closeModal('employeeModal');
+            loadEmployeeList();
+        }
+
+        // 직원 삭제
+        function deleteEmployee(id) {
+            const employee = employees.find(e => e.id === id);
+            if (!employee) return;
+            
+            if (!confirm(`${employee.name}님을 삭제하시겠습니까?\n관련된 모든 스케줄 정보도 함께 삭제됩니다.`)) {
+                return;
+            }
+            
+            // 직원 삭제
+            employees = employees.filter(e => e.id !== id);
+            localStorage.setItem('employees', JSON.stringify(employees));
+            
+            // 관련 스케줄도 정리 (선택사항)
+            Object.keys(scheduleData).forEach(date => {
+                shiftDefinitions.forEach(def => {
+                    if (scheduleData[date][def.key]?.employee_id === id) {
+                        delete scheduleData[date][def.key];
+                    }
+                });
+                if (Object.keys(scheduleData[date]).length === 0) {
+                    delete scheduleData[date];
+                }
+            });
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            
+            alert('직원이 삭제되었습니다.');
+            loadEmployeeList();
+            loadSchedule();
+        }
+
+        // 시스템 초기화
+        function resetSystem() {
+            if (!confirm('모든 데이터가 삭제됩니다. 정말 초기화하시겠습니까?')) {
+                return;
+            }
+            
+            if (!confirm('이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?')) {
+                return;
+            }
+            
+            localStorage.clear();
+            alert('시스템이 초기화되었습니다.');
+            location.reload();
+        }
+
+        // 스케줄 로드
+       function loadSchedule() {
+           const tbody = document.getElementById('scheduleTableBody');
+           tbody.innerHTML = '';
+
+            const dateRow = document.getElementById('dateRow');
+            if (dateRow) {
+                dateRow.innerHTML = '<th></th>';
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(date.getDate() + i);
+                    const cell = document.createElement('th');
+                    cell.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+                    dateRow.appendChild(cell);
+                }
+            }
+            
+            // 근무 파트별 행 생성
+            const shiftRows = shiftDefinitions.map(def => ({ label: def.label, key: def.key }));
+
+            shiftRows.forEach(slot => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td><strong>${slot.label}</strong></td>`;
+                
+                // 일주일 각 날짜
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(date.getDate() + i);
+                    const dateStr = formatDateForInput(date);
+                    
+                    const cell = document.createElement('td');
+                    const schedule = scheduleData[dateStr]?.[slot.key];
+                    const shiftInfo = getShiftTemplates(date).find(s => s.key === slot.key);
+
+                    if (schedule) {
+                        const employee = employees.find(e => e.id === schedule.employee_id);
+                        cell.innerHTML = `
+                            <div style="cursor: pointer;" onclick="quickEditSchedule('${dateStr}', '${slot.key}', ${schedule.employee_id})">
+                                <div>${employee ? employee.name : '미정'}</div>
+                                <small>${schedule.start} - ${schedule.end}</small>
+                            </div>
+                        `;
+
+                        let attHtml = '<div style="margin-top:0.25rem;">';
+                        if (currentUser && currentUser.id === schedule.employee_id) {
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkIn('${dateStr}','${slot.key}')">출근</button> <span>${schedule.checkIn || ''}</span> `;
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkOut('${dateStr}','${slot.key}')">퇴근</button> <span>${schedule.checkOut || ''}</span>`;
+                        } else {
+                            if (schedule.checkIn) attHtml += `<small>출근 ${schedule.checkIn}</small> `;
+                            if (schedule.checkOut) attHtml += `<small>퇴근 ${schedule.checkOut}</small>`;
+                        }
+                        attHtml += '</div>';
+                        cell.innerHTML += attHtml;
+
+                        const hasRequest = scheduleRequests.some(r =>
+                            r.requested_date === dateStr &&
+                            r.status === 'pending'
+                        );
+
+                        if (hasRequest) {
+                            cell.innerHTML += '<br><span class="status status-pending">변경 요청중</span>';
+                        }
+                    } else {
+                        cell.innerHTML = `<span style="color: #999;">${shiftInfo.start}-${shiftInfo.end}</span>`;
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // 주 변경
+        function changeWeek(direction) {
+            currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+            document.getElementById('weekSelector').value = formatDateForInput(currentWeekStart);
+            loadSchedule();
+        }
+
+        function changeMonth(direction) {
+            currentMonth.setMonth(currentMonth.getMonth() + direction);
+            document.getElementById('monthSelector').value = formatMonthForInput(currentMonth);
+            loadMonthlySchedule();
+        }
+
+        function toggleScheduleView() {
+            if (scheduleView === 'week') {
+                scheduleView = 'month';
+                document.getElementById('weeklyScheduleCard').style.display = 'none';
+                document.getElementById('monthlyScheduleCard').style.display = 'block';
+                document.getElementById('viewToggleBtn').textContent = '주간 보기';
+                loadMonthlySchedule();
+            } else {
+                scheduleView = 'week';
+                document.getElementById('monthlyScheduleCard').style.display = 'none';
+                document.getElementById('weeklyScheduleCard').style.display = 'block';
+                document.getElementById('viewToggleBtn').textContent = '월간 보기';
+                loadSchedule();
+            }
+        }
+
+        function loadMonthlySchedule() {
+            if (!currentMonth) {
+                currentMonth = new Date();
+                currentMonth.setDate(1);
+            }
+            const selector = document.getElementById('monthSelector');
+            if (selector && selector.value) {
+                currentMonth = new Date(selector.value + '-01');
+            } else if (selector) {
+                selector.value = formatMonthForInput(currentMonth);
+            }
+
+            const headerRow = document.getElementById('monthlyHeader');
+            headerRow.innerHTML = '<th>날짜</th>' +
+                shiftDefinitions.map(d => `<th>${d.label}</th>`).join('');
+
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(year, month, day);
+                const dateStr = formatDateForInput(dateObj);
+                const weekDay = ['일','월','화','수','목','금','토'][dateObj.getDay()];
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${dateObj.getMonth() + 1}/${day}(${weekDay})</td>`;
+
+                const shiftInfos = getShiftTemplates(dateObj);
+                shiftDefinitions.forEach(def => {
+                    const cell = document.createElement('td');
+                    const schedule = scheduleData[dateStr]?.[def.key];
+                    const info = shiftInfos.find(s => s.key === def.key);
+                    if (schedule) {
+                        const employee = employees.find(e => e.id === schedule.employee_id);
+                        cell.innerHTML = `<div style="cursor:pointer;" onclick="quickEditSchedule('${dateStr}','${def.key}', ${schedule.employee_id})">${employee ? employee.name : '미정'}</div><small>${schedule.start}-${schedule.end}</small>`;
+                        let attHtml = '<div style="margin-top:0.25rem;">';
+                        if (currentUser && currentUser.id === schedule.employee_id) {
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkIn('${dateStr}','${def.key}')">출근</button> <span>${schedule.checkIn || ''}</span> `;
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkOut('${dateStr}','${def.key}')">퇴근</button> <span>${schedule.checkOut || ''}</span>`;
+                        } else {
+                            if (schedule.checkIn) attHtml += `<small>출근 ${schedule.checkIn}</small> `;
+                            if (schedule.checkOut) attHtml += `<small>퇴근 ${schedule.checkOut}</small>`;
+                        }
+                        attHtml += '</div>';
+                        cell.innerHTML += attHtml;
+                    } else {
+                        cell.innerHTML = `<span style="color:#999;">${info.start}-${info.end}</span>`;
+                    }
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            }
+        }
+
+        // 스케줄 변경 요청 모달 표시
+        function showScheduleRequestModal() {
+            const modal = document.getElementById('scheduleRequestModal');
+            modal.style.display = 'block';
+
+            // 오늘 날짜를 기본값으로 설정
+            const today = new Date();
+            document.getElementById('requestDate').value = formatDateForInput(today);
+            document.getElementById('requestDate').min = formatDateForInput(today);
+
+            const shiftSelect = document.getElementById('requestedShift');
+            const shifts = getShiftTemplates(today);
+            shiftSelect.innerHTML = '<option value="">선택하세요</option>' +
+                shifts.map(s => `<option value="${s.key}">${s.label} (${s.start}-${s.end})</option>`).join('') +
+                '<option value="off">휴무</option>';
+        }
+
+        // 모달 닫기
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // 스케줄 변경 요청 제출
+        function submitScheduleRequest(event) {
+            event.preventDefault();
+            
+            const requestData = {
+                id: Date.now(),
+                employee_id: currentUser.id,
+                employee_name: currentUser.name,
+                requested_date: document.getElementById('requestDate').value,
+                original_shift: document.getElementById('currentShift').value || '미정',
+                requested_shift: document.getElementById('requestedShift').value,
+                reason: document.getElementById('requestReason').value,
+                status: 'pending',
+                request_date: new Date().toISOString()
+            };
+            
+            scheduleRequests.push(requestData);
+            localStorage.setItem('scheduleRequests', JSON.stringify(scheduleRequests));
+            
+            alert('스케줄 변경 요청이 제출되었습니다. 대표님의 승인을 기다려주세요.');
+            closeModal('scheduleRequestModal');
+            
+            // 대표인 경우 승인 대기 목록 갱신
+            if (currentUser.role === '대표') {
+                loadPendingRequests();
+            }
+            
+            // 스케줄 다시 로드
+            loadSchedule();
+        }
+
+        // 승인 대기 요청 로드 (대표만)
+        function loadPendingRequests() {
+            const pendingList = document.getElementById('pendingRequestsList');
+            const pendingRequests = scheduleRequests.filter(r => r.status === 'pending');
+            const pendingCount = document.getElementById('pendingCount');
+            
+            pendingCount.textContent = pendingRequests.length;
+            
+            if (pendingRequests.length === 0) {
+                pendingList.innerHTML = '<div class="empty-state"><p>승인 대기중인 요청이 없습니다.</p></div>';
+                return;
+            }
+            
+            pendingList.innerHTML = pendingRequests.map(request => {
+                const info = request.requested_shift === 'off' ? null : getShiftTemplates(request.requested_date).find(s => s.key === request.requested_shift);
+                const requestedText = request.requested_shift === 'off' ? '휴무' : `${info.label} (${info.start}-${info.end})`;
+                return `
+                <div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+                    <h4>${request.employee_name}님의 요청</h4>
+                    <p><strong>날짜:</strong> ${request.requested_date}</p>
+                    <p><strong>현재:</strong> ${request.original_shift} → <strong>변경:</strong> ${requestedText}</p>
+                    <p><strong>사유:</strong> ${request.reason}</p>
+                    <p><small>요청일시: ${new Date(request.request_date).toLocaleString()}</small></p>
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-success" onclick="approveRequest(${request.id})">승인</button>
+                        <button class="btn btn-danger" onclick="rejectRequest(${request.id})">거절</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 요청 승인
+        function approveRequest(requestId) {
+            const request = scheduleRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'approved';
+                
+                // 스케줄 데이터 업데이트
+                updateScheduleWithRequest(request);
+                
+                localStorage.setItem('scheduleRequests', JSON.stringify(scheduleRequests));
+                alert(`${request.employee_name}님의 스케줄 변경 요청이 승인되었습니다.`);
+                
+                loadPendingRequests();
+                loadSchedule();
+            }
+        }
+
+        // 요청 거절
+        function rejectRequest(requestId) {
+            const request = scheduleRequests.find(r => r.id === requestId);
+            if (request) {
+                request.status = 'rejected';
+                localStorage.setItem('scheduleRequests', JSON.stringify(scheduleRequests));
+                alert(`${request.employee_name}님의 스케줄 변경 요청이 거절되었습니다.`);
+                
+                loadPendingRequests();
+                loadSchedule();
+            }
+        }
+
+        // 승인된 요청으로 스케줄 업데이트
+        function updateScheduleWithRequest(request) {
+            const date = request.requested_date;
+
+            if (request.requested_shift === 'off') {
+                if (scheduleData[date]) {
+                    Object.keys(scheduleData[date]).forEach(shift => {
+                        if (scheduleData[date][shift].employee_id === request.employee_id) {
+                            delete scheduleData[date][shift];
+                        }
+                    });
+                    if (Object.keys(scheduleData[date]).length === 0) {
+                        delete scheduleData[date];
+                    }
+                }
+            } else {
+                const shifts = getShiftTemplates(date);
+                const info = shifts.find(s => s.key === request.requested_shift);
+                if (!info) return;
+
+                if (!scheduleData[date]) {
+                    scheduleData[date] = {};
+                }
+
+                const existing = scheduleData[date][request.requested_shift] || {};
+                scheduleData[date][request.requested_shift] = {
+                    employee_id: request.employee_id,
+                    start: info.start,
+                    end: info.end,
+                    checkIn: existing.checkIn || '',
+                    checkOut: existing.checkOut || ''
+                };
+            }
+
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+        }
+
+        // 날짜 포맷팅 함수들
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const weekDay = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+            return `${year}년 ${month}월 ${day}일 (${weekDay})`;
+        }
+
+        function formatDateForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatMonthForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        function getMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function getShiftTemplates(date) {
+            const d = new Date(date);
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+            return shiftDefinitions.map(def => {
+                const times = isWeekend ? def.weekend : def.weekday;
+                return { key: def.key, label: def.label, start: times.start, end: times.end };
+            });
+        }
+
+        // 스케줄 편집 모달 표시
+        function showScheduleEditModal() {
+            const modal = document.getElementById('scheduleEditModal');
+            modal.style.display = 'block';
+
+            const container = document.getElementById('shiftEditContainer');
+            const employeeOptions = '<option value="">미배정</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.role})</option>`).join('');
+
+            container.innerHTML = '';
+            const today = new Date();
+            const shifts = getShiftTemplates(today);
+            shifts.forEach(shift => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.padding = '1rem';
+                div.innerHTML = `<h5>${shift.label} (${shift.start}-${shift.end})</h5>`;
+                const select = document.createElement('select');
+                select.className = 'form-control shift-select';
+                select.setAttribute('data-shift', shift.key);
+                select.innerHTML = employeeOptions;
+                div.appendChild(select);
+                container.appendChild(div);
+            });
+
+            // 오늘 날짜 설정
+            document.getElementById('editDate').value = formatDateForInput(today);
+            document.getElementById('batchStartDate').value = formatDateForInput(today);
+            
+            const endDate = new Date(today);
+            endDate.setDate(endDate.getDate() + 30);
+            document.getElementById('batchEndDate').value = formatDateForInput(endDate);
+        }
+
+        // 특정 날짜의 스케줄 로드
+        function loadDaySchedule() {
+            const selectedDate = document.getElementById('editDate').value;
+            if (!selectedDate) return;
+            
+            document.getElementById('dayScheduleEdit').style.display = 'block';
+            document.getElementById('editDateDisplay').textContent = formatDate(new Date(selectedDate));
+            
+            const container = document.getElementById('shiftEditContainer');
+            const employeeOptions = '<option value="">미배정</option>' +
+                employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.role})</option>`).join('');
+            container.innerHTML = '';
+
+            const shifts = getShiftTemplates(selectedDate);
+            const schedule = scheduleData[selectedDate] || {};
+
+            shifts.forEach(shift => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.padding = '1rem';
+                div.innerHTML = `<h5>${shift.label} (${shift.start}-${shift.end})</h5>`;
+                const select = document.createElement('select');
+                select.className = 'form-control shift-select';
+                select.setAttribute('data-shift', shift.key);
+                select.innerHTML = employeeOptions;
+                select.value = schedule[shift.key]?.employee_id || '';
+                div.appendChild(select);
+                container.appendChild(div);
+            });
+        }
+
+        // 스케줄 저장
+        function saveSchedule() {
+            const selectedDate = document.getElementById('editDate').value;
+            if (!scheduleData[selectedDate]) {
+                scheduleData[selectedDate] = {};
+            }
+
+            const selects = document.querySelectorAll('#shiftEditContainer .shift-select');
+            const shifts = getShiftTemplates(selectedDate);
+
+            selects.forEach(select => {
+                const key = select.getAttribute('data-shift');
+                const empId = select.value;
+                const shiftInfo = shifts.find(s => s.key === key);
+
+                if (empId) {
+                    const existing = scheduleData[selectedDate][key] || {};
+                    scheduleData[selectedDate][key] = {
+                        employee_id: parseInt(empId),
+                        start: shiftInfo.start,
+                        end: shiftInfo.end,
+                        checkIn: existing.checkIn || '',
+                        checkOut: existing.checkOut || ''
+                    };
+                } else {
+                    delete scheduleData[selectedDate][key];
+                }
+            });
+
+            if (Object.keys(scheduleData[selectedDate]).length === 0) {
+                delete scheduleData[selectedDate];
+            }
+            
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            alert('스케줄이 저장되었습니다.');
+            loadSchedule();
+            closeModal('scheduleEditModal');
+        }
+
+        // 일괄 스케줄 생성
+        function generateBatchSchedule() {
+            const startDate = new Date(document.getElementById('batchStartDate').value);
+            const endDate = new Date(document.getElementById('batchEndDate').value);
+            const pattern = document.getElementById('schedulePattern').value;
+            
+            if (startDate > endDate) {
+                alert('종료 날짜는 시작 날짜 이후여야 합니다.');
+                return;
+            }
+            
+            const confirmMsg = `${formatDate(startDate)}부터 ${formatDate(endDate)}까지 스케줄을 생성하시겠습니까?\n기존 스케줄은 덮어씌워집니다.`;
+            if (!confirm(confirmMsg)) return;
+            
+            // 직원 리스트 (대표 제외)
+            const workingEmployees = employees.filter(emp => emp.role !== '대표');
+            
+            if (workingEmployees.length < 2) {
+                alert('근무 가능한 직원이 2명 이상 필요합니다.');
+                return;
+            }
+            
+            // 날짜별로 스케줄 생성
+            let employeeIndex = 0;
+            const currentDate = new Date(startDate);
+
+            while (currentDate <= endDate) {
+                const dateStr = formatDateForInput(currentDate);
+                const shifts = getShiftTemplates(currentDate);
+                scheduleData[dateStr] = {};
+
+                shifts.forEach((shift, idx) => {
+                    const emp = workingEmployees[(employeeIndex + idx) % workingEmployees.length];
+                    scheduleData[dateStr][shift.key] = {
+                        employee_id: emp.id,
+                        start: shift.start,
+                        end: shift.end,
+                        checkIn: '',
+                        checkOut: ''
+                    };
+                });
+
+                employeeIndex += shifts.length;
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            alert('스케줄이 일괄 생성되었습니다.');
+            loadSchedule();
+            closeModal('scheduleEditModal');
+        }
+
+        // 날짜 변경 시 현재 근무 시간 표시
+        document.getElementById('requestDate').addEventListener('change', function() {
+            const selectedDate = this.value;
+            const schedule = scheduleData[selectedDate];
+            let currentShift = '휴무';
+
+            if (schedule) {
+                const parts = [];
+                const shifts = getShiftTemplates(selectedDate);
+                shifts.forEach(s => {
+                    if (schedule[s.key]?.employee_id === currentUser.id) {
+                        parts.push(`${s.label} (${s.start}-${s.end})`);
+                    }
+                });
+            if (parts.length > 0) {
+                currentShift = parts.join(', ');
+            }
+            }
+
+            document.getElementById('currentShift').value = currentShift;
+
+            const shiftSelect = document.getElementById('requestedShift');
+            const shifts = getShiftTemplates(selectedDate);
+            shiftSelect.innerHTML = '<option value="">선택하세요</option>' +
+                shifts.map(s => `<option value="${s.key}">${s.label} (${s.start}-${s.end})</option>`).join('') +
+                '<option value="off">휴무</option>';
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'block') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // 빠른 스케줄 편집 (셀 클릭 시)
+        function quickEditSchedule(date, shift, currentEmployeeId) {
+            // 권한 확인
+            if (currentUser.role !== '대표' && currentUser.role !== '매니저') {
+                alert('스케줄 편집 권한이 없습니다.');
+                return;
+            }
+
+            const employee = employees.find(e => e.id === currentEmployeeId);
+            const employeeName = employee ? employee.name : '미배정';
+
+            const shiftInfo = getShiftTemplates(date).find(s => s.key === shift);
+
+            const newEmployeeName = prompt(`${formatDate(new Date(date))} ${shiftInfo.label} 근무 (${shiftInfo.start}-${shiftInfo.end})\n현재: ${employeeName}\n\n새로운 직원 이름을 입력하세요 (취소: 미배정):`);
+            
+            if (newEmployeeName === null) return;
+            
+            if (newEmployeeName === '' || newEmployeeName === '미배정') {
+                // 배정 취소
+                if (scheduleData[date] && scheduleData[date][shift]) {
+                    delete scheduleData[date][shift];
+                    if (Object.keys(scheduleData[date]).length === 0) {
+                        delete scheduleData[date];
+                    }
+                }
+            } else {
+                // 새 직원 찾기
+                const newEmployee = employees.find(e => e.name === newEmployeeName);
+                if (!newEmployee) {
+                    alert('해당 이름의 직원을 찾을 수 없습니다.');
+                    return;
+                }
+                
+                if (!scheduleData[date]) {
+                    scheduleData[date] = {};
+                }
+                
+                const info = getShiftTemplates(date).find(s => s.key === shift);
+                const existing = scheduleData[date][shift] || {};
+                scheduleData[date][shift] = {
+                    employee_id: newEmployee.id,
+                    start: info.start,
+                    end: info.end,
+                    checkIn: existing.checkIn || '',
+                    checkOut: existing.checkOut || ''
+                };
+            }
+            
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            loadSchedule();
+        }
+
+        function checkIn(date, shift) {
+            if (!scheduleData[date] || !scheduleData[date][shift]) return;
+            scheduleData[date][shift].checkIn = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            if (scheduleView === 'month') {
+                loadMonthlySchedule();
+            } else {
+                loadSchedule();
+            }
+        }
+
+        function checkOut(date, shift) {
+            if (!scheduleData[date] || !scheduleData[date][shift]) return;
+            scheduleData[date][shift].checkOut = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            if (scheduleView === 'month') {
+                loadMonthlySchedule();
+            } else {
+                loadSchedule();
+            }
+        }
+
+        // 데이터 백업 함수 (추후 사용)
+        function exportData() {
+            const data = {
+                employees: employees,
+                scheduleData: scheduleData,
+                scheduleRequests: scheduleRequests,
+                shiftDefinitions: shiftDefinitions,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cafe_backup_${formatDateForInput(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 데이터 복원 함수 (추후 사용)
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.employees) {
+                        employees = data.employees;
+                        localStorage.setItem('employees', JSON.stringify(employees));
+                    }
+                    
+                    if (data.scheduleData) {
+                        scheduleData = data.scheduleData;
+                        localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+                    }
+                    
+                    if (data.scheduleRequests) {
+                        scheduleRequests = data.scheduleRequests;
+                        localStorage.setItem('scheduleRequests', JSON.stringify(scheduleRequests));
+                    }
+
+                    if (data.shiftDefinitions) {
+                        shiftDefinitions = data.shiftDefinitions;
+                        localStorage.setItem('shiftDefinitions', JSON.stringify(shiftDefinitions));
+                    }
+                    
+                    alert('데이터가 성공적으로 복원되었습니다.');
+                    location.reload();
+                } catch (error) {
+                    alert('데이터 복원에 실패했습니다.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        }
+        function login(event) {
+            event.preventDefault();
+            const name = document.getElementById("loginName").value.trim();
+            const pass = document.getElementById("loginPassword").value;
+            const user = employees.find(e => e.name === name && e.password === pass);
+            if (user) {
+                localStorage.setItem("currentUser", JSON.stringify(user));
+                setCurrentUser(user);
+                showMainUI(true);
+                document.getElementById("login-page").style.display = "none";
+                loadSchedule();
+            } else {
+                alert("이름 또는 비밀번호가 올바르지 않습니다.");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("currentUser");
+            currentUser = null;
+            showMainUI(false);
+            document.getElementById("login-page").style.display = "flex";
+        }
+
+    </script>
+</body>
+</html>
