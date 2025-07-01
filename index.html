@@ -447,7 +447,7 @@
         <!-- 스케줄 관리 페이지 -->
         <div id="schedule-page" class="page">
             <!-- 스케줄 조회 카드 -->
-            <div class="card">
+            <div class="card" id="weeklyScheduleCard">
                 <div class="card-header">
                     <h2 class="card-title">
                         <span>📅</span>
@@ -455,13 +455,14 @@
                     </h2>
                 </div>
                 <div class="date-controls">
-                    <button class="btn btn-secondary" onclick="changeWeek(-1)">◀ 이전 주</button>
+                    <button class="btn btn-secondary" id="prevPeriodBtn" onclick="changeWeek(-1)">◀ 이전 주</button>
                     <input type="date" id="weekSelector" class="date-input" onchange="loadSchedule()">
-                    <button class="btn btn-secondary" onclick="changeWeek(1)">다음 주 ▶</button>
+                    <button class="btn btn-secondary" id="nextPeriodBtn" onclick="changeWeek(1)">다음 주 ▶</button>
+                    <button class="btn btn-secondary" id="viewToggleBtn" onclick="toggleScheduleView()">월간 보기</button>
                     <button class="btn btn-primary" onclick="showScheduleRequestModal()">스케줄 변경 요청</button>
                     <button class="btn btn-primary" id="scheduleEditBtn" style="display: none;" onclick="showScheduleEditModal()">스케줄 편집</button>
                 </div>
-                <div class="schedule-container">
+                <div class="schedule-container" id="weeklySchedule">
                     <table class="schedule-table">
                         <thead>
                             <tr>
@@ -488,6 +489,31 @@
                         <tbody id="scheduleTableBody">
                             <!-- 스케줄 데이터가 여기에 동적으로 추가됩니다 -->
                         </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" id="monthlyScheduleCard" style="display:none;">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span>📅</span>
+                        <span>월간 스케줄</span>
+                    </h2>
+                </div>
+                <div class="date-controls">
+                    <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ 이전 달</button>
+                    <input type="month" id="monthSelector" class="date-input" onchange="loadMonthlySchedule()">
+                    <button class="btn btn-secondary" onclick="changeMonth(1)">다음 달 ▶</button>
+                    <button class="btn btn-secondary" onclick="toggleScheduleView()">주간 보기</button>
+                </div>
+                <div class="schedule-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr id="monthlyHeader">
+                                <th>날짜</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -720,6 +746,8 @@
         // 전역 변수
         let currentUser = null;
         let currentWeekStart = null;
+        let currentMonth = null;
+        let scheduleView = 'week';
         let scheduleData = {};
         let employees = [];
         let scheduleRequests = [];
@@ -761,7 +789,9 @@
             const today = new Date();
             document.getElementById("currentDate").textContent = formatDate(today);
             currentWeekStart = getMonday(today);
+            currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             document.getElementById("weekSelector").value = formatDateForInput(currentWeekStart);
+            document.getElementById("monthSelector").value = formatMonthForInput(currentMonth);
             loadInitialData();
             setupNavigation();
             const stored = localStorage.getItem("currentUser");
@@ -1110,6 +1140,75 @@
             loadSchedule();
         }
 
+        function changeMonth(direction) {
+            currentMonth.setMonth(currentMonth.getMonth() + direction);
+            document.getElementById('monthSelector').value = formatMonthForInput(currentMonth);
+            loadMonthlySchedule();
+        }
+
+        function toggleScheduleView() {
+            if (scheduleView === 'week') {
+                scheduleView = 'month';
+                document.getElementById('weeklyScheduleCard').style.display = 'none';
+                document.getElementById('monthlyScheduleCard').style.display = 'block';
+                document.getElementById('viewToggleBtn').textContent = '주간 보기';
+                loadMonthlySchedule();
+            } else {
+                scheduleView = 'week';
+                document.getElementById('monthlyScheduleCard').style.display = 'none';
+                document.getElementById('weeklyScheduleCard').style.display = 'block';
+                document.getElementById('viewToggleBtn').textContent = '월간 보기';
+                loadSchedule();
+            }
+        }
+
+        function loadMonthlySchedule() {
+            if (!currentMonth) {
+                currentMonth = new Date();
+                currentMonth.setDate(1);
+            }
+            const selector = document.getElementById('monthSelector');
+            if (selector && selector.value) {
+                currentMonth = new Date(selector.value + '-01');
+            } else if (selector) {
+                selector.value = formatMonthForInput(currentMonth);
+            }
+
+            const headerRow = document.getElementById('monthlyHeader');
+            headerRow.innerHTML = '<th>날짜</th>' +
+                shiftDefinitions.map(d => `<th>${d.label}</th>`).join('');
+
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(year, month, day);
+                const dateStr = formatDateForInput(dateObj);
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${dateObj.getMonth() + 1}/${day}</td>`;
+
+                const shiftInfos = getShiftTemplates(dateObj);
+                shiftDefinitions.forEach(def => {
+                    const cell = document.createElement('td');
+                    const schedule = scheduleData[dateStr]?.[def.key];
+                    const info = shiftInfos.find(s => s.key === def.key);
+                    if (schedule) {
+                        const employee = employees.find(e => e.id === schedule.employee_id);
+                        cell.innerHTML = `<div>${employee ? employee.name : '미정'}</div><small>${schedule.start}-${schedule.end}</small>`;
+                    } else {
+                        cell.innerHTML = `<span style="color:#999;">${info.start}-${info.end}</span>`;
+                    }
+                    row.appendChild(cell);
+                });
+
+                tbody.appendChild(row);
+            }
+        }
+
         // 스케줄 변경 요청 모달 표시
         function showScheduleRequestModal() {
             const modal = document.getElementById('scheduleRequestModal');
@@ -1272,6 +1371,12 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        function formatMonthForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
         }
 
         function getMonday(date) {
