@@ -159,6 +159,11 @@
             color: white;
         }
 
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
         /* 스케줄 테이블 */
         .schedule-container {
             overflow-x: auto;
@@ -172,7 +177,7 @@
 
         .schedule-table th,
         .schedule-table td {
-            padding: 1rem;
+            padding: 0.5rem;
             text-align: center;
             border: 1px solid #ddd;
         }
@@ -315,7 +320,7 @@
 
             .schedule-table th,
             .schedule-table td {
-                padding: 0.5rem;
+                padding: 0.25rem;
             }
         }
 
@@ -459,8 +464,6 @@
                     <input type="date" id="weekSelector" class="date-input" onchange="loadSchedule()">
                     <button class="btn btn-secondary" id="nextPeriodBtn" onclick="changeWeek(1)">다음 주 ▶</button>
                     <button class="btn btn-secondary" id="viewToggleBtn" onclick="toggleScheduleView()">월간 보기</button>
-                    <button class="btn btn-primary" onclick="showScheduleRequestModal()">스케줄 변경 요청</button>
-                    <button class="btn btn-primary" id="scheduleEditBtn" style="display: none;" onclick="showScheduleEditModal()">스케줄 편집</button>
                 </div>
                 <div class="schedule-container" id="weeklySchedule">
                     <table class="schedule-table">
@@ -505,6 +508,8 @@
                     <input type="month" id="monthSelector" class="date-input" onchange="loadMonthlySchedule()">
                     <button class="btn btn-secondary" onclick="changeMonth(1)">다음 달 ▶</button>
                     <button class="btn btn-secondary" onclick="toggleScheduleView()">주간 보기</button>
+                    <button class="btn btn-primary" onclick="showScheduleRequestModal()">스케줄 변경 요청</button>
+                    <button class="btn btn-primary" id="scheduleEditBtn" style="display: none;" onclick="showScheduleEditModal()">스케줄 편집</button>
                 </div>
                 <div class="schedule-container">
                     <table class="schedule-table">
@@ -871,7 +876,9 @@
                     scheduleData[dateStr][shift.key] = {
                         employee_id: employee.id,
                         start: shift.start,
-                        end: shift.end
+                        end: shift.end,
+                        checkIn: '',
+                        checkOut: ''
                     };
                 });
                 empIndex++;
@@ -1112,13 +1119,23 @@
                                 <small>${schedule.start} - ${schedule.end}</small>
                             </div>
                         `;
-                    
-                    // 변경 요청이 있는지 확인
+
+                        let attHtml = '<div style="margin-top:0.25rem;">';
+                        if (currentUser && currentUser.id === schedule.employee_id) {
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkIn('${dateStr}','${slot.key}')">출근</button> <span>${schedule.checkIn || ''}</span> `;
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkOut('${dateStr}','${slot.key}')">퇴근</button> <span>${schedule.checkOut || ''}</span>`;
+                        } else {
+                            if (schedule.checkIn) attHtml += `<small>출근 ${schedule.checkIn}</small> `;
+                            if (schedule.checkOut) attHtml += `<small>퇴근 ${schedule.checkOut}</small>`;
+                        }
+                        attHtml += '</div>';
+                        cell.innerHTML += attHtml;
+
                         const hasRequest = scheduleRequests.some(r =>
                             r.requested_date === dateStr &&
                             r.status === 'pending'
                         );
-                        
+
                         if (hasRequest) {
                             cell.innerHTML += '<br><span class="status status-pending">변경 요청중</span>';
                         }
@@ -1188,8 +1205,9 @@
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateObj = new Date(year, month, day);
                 const dateStr = formatDateForInput(dateObj);
+                const weekDay = ['일','월','화','수','목','금','토'][dateObj.getDay()];
                 const row = document.createElement('tr');
-                row.innerHTML = `<td>${dateObj.getMonth() + 1}/${day}</td>`;
+                row.innerHTML = `<td>${dateObj.getMonth() + 1}/${day}(${weekDay})</td>`;
 
                 const shiftInfos = getShiftTemplates(dateObj);
                 shiftDefinitions.forEach(def => {
@@ -1198,7 +1216,17 @@
                     const info = shiftInfos.find(s => s.key === def.key);
                     if (schedule) {
                         const employee = employees.find(e => e.id === schedule.employee_id);
-                        cell.innerHTML = `<div>${employee ? employee.name : '미정'}</div><small>${schedule.start}-${schedule.end}</small>`;
+                        cell.innerHTML = `<div style="cursor:pointer;" onclick="quickEditSchedule('${dateStr}','${def.key}', ${schedule.employee_id})">${employee ? employee.name : '미정'}</div><small>${schedule.start}-${schedule.end}</small>`;
+                        let attHtml = '<div style="margin-top:0.25rem;">';
+                        if (currentUser && currentUser.id === schedule.employee_id) {
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkIn('${dateStr}','${def.key}')">출근</button> <span>${schedule.checkIn || ''}</span> `;
+                            attHtml += `<button class="btn btn-secondary btn-sm" onclick="checkOut('${dateStr}','${def.key}')">퇴근</button> <span>${schedule.checkOut || ''}</span>`;
+                        } else {
+                            if (schedule.checkIn) attHtml += `<small>출근 ${schedule.checkIn}</small> `;
+                            if (schedule.checkOut) attHtml += `<small>퇴근 ${schedule.checkOut}</small>`;
+                        }
+                        attHtml += '</div>';
+                        cell.innerHTML += attHtml;
                     } else {
                         cell.innerHTML = `<span style="color:#999;">${info.start}-${info.end}</span>`;
                     }
@@ -1347,10 +1375,13 @@
                     scheduleData[date] = {};
                 }
 
+                const existing = scheduleData[date][request.requested_shift] || {};
                 scheduleData[date][request.requested_shift] = {
                     employee_id: request.employee_id,
                     start: info.start,
-                    end: info.end
+                    end: info.end,
+                    checkIn: existing.checkIn || '',
+                    checkOut: existing.checkOut || ''
                 };
             }
 
@@ -1476,10 +1507,13 @@
                 const shiftInfo = shifts.find(s => s.key === key);
 
                 if (empId) {
+                    const existing = scheduleData[selectedDate][key] || {};
                     scheduleData[selectedDate][key] = {
                         employee_id: parseInt(empId),
                         start: shiftInfo.start,
-                        end: shiftInfo.end
+                        end: shiftInfo.end,
+                        checkIn: existing.checkIn || '',
+                        checkOut: existing.checkOut || ''
                     };
                 } else {
                     delete scheduleData[selectedDate][key];
@@ -1532,7 +1566,9 @@
                     scheduleData[dateStr][shift.key] = {
                         employee_id: emp.id,
                         start: shift.start,
-                        end: shift.end
+                        end: shift.end,
+                        checkIn: '',
+                        checkOut: ''
                     };
                 });
 
@@ -1624,15 +1660,40 @@
                 }
                 
                 const info = getShiftTemplates(date).find(s => s.key === shift);
+                const existing = scheduleData[date][shift] || {};
                 scheduleData[date][shift] = {
                     employee_id: newEmployee.id,
                     start: info.start,
-                    end: info.end
+                    end: info.end,
+                    checkIn: existing.checkIn || '',
+                    checkOut: existing.checkOut || ''
                 };
             }
             
             localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
             loadSchedule();
+        }
+
+        function checkIn(date, shift) {
+            if (!scheduleData[date] || !scheduleData[date][shift]) return;
+            scheduleData[date][shift].checkIn = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            if (scheduleView === 'month') {
+                loadMonthlySchedule();
+            } else {
+                loadSchedule();
+            }
+        }
+
+        function checkOut(date, shift) {
+            if (!scheduleData[date] || !scheduleData[date][shift]) return;
+            scheduleData[date][shift].checkOut = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            if (scheduleView === 'month') {
+                loadMonthlySchedule();
+            } else {
+                loadSchedule();
+            }
         }
 
         // 데이터 백업 함수 (추후 사용)
