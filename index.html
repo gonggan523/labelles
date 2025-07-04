@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카페 통합 관리 시스템</title>
+    <style>
+        body {font-family: sans-serif; margin:0; padding:0;}
+        .tab-navigation {background:#eee; display:flex;}
+        .tab-navigation button {flex:1; padding:10px; border:none; background:#ddd; cursor:pointer;}
+        .tab-navigation button.active {background:#ccc;}
+        .tab-content {display:none; padding:20px;}
+        .tab-content.active {display:block;}
+    </style>
+</head>
+<body>
+    <div class="tab-navigation">
+        <button data-tab="dashboard" class="active">대시보드</button>
+        <button data-tab="employees">직원</button>
+        <button data-tab="inventory">재고</button>
+    </div>
+    <div id="dashboard" class="tab-content active">
+        <h1>대시보드</h1>
+        <div id="todayWorkers"></div>
+    </div>
+    <div id="employees" class="tab-content">
+        <h1>직원 목록</h1>
+        <table id="employeeTable"></table>
+    </div>
+    <div id="inventory" class="tab-content">
+        <h1>재고 현황</h1>
+        <table id="inventoryTable"></table>
+    </div>
+
+<script>
+(function(){
+'use strict';
+
+function initializeData(){
+    if(!localStorage.getItem('employees')){
+        const d=[{id:1,name:'김대표',role:'대표',contact:'010-1234-5678',hire_date:'2020-01-01',is_active:true}];
+        localStorage.setItem('employees',JSON.stringify(d));
+    }
+    if(!localStorage.getItem('inventory')){
+        const d=[{id:1,name:'아메리카노 원두',category:'원두',current_stock:50,min_stock:10,unit:'kg'}];
+        localStorage.setItem('inventory',JSON.stringify(d));
+    }
+    if(!localStorage.getItem('schedule')){
+        const today=new Date().toISOString().split('T')[0];
+        const s={[today]:{'오픈':{employee_id:1,start:'09:00',end:'15:00'}}};
+        localStorage.setItem('schedule',JSON.stringify(s));
+    }
+    if(!localStorage.getItem('currentUser')){
+        localStorage.setItem('currentUser','김대표');
+    }
+}
+
+function loadEmployees(){
+    const employees=JSON.parse(localStorage.getItem('employees')||'[]');
+    const tbody=employees.map(e=>`<tr><td>${e.name}</td><td>${e.role}</td><td>${e.contact}</td></tr>`).join('');
+    document.getElementById('employeeTable').innerHTML='<tbody>'+tbody+'</tbody>';
+}
+
+function loadInventory(){
+    const inventory=JSON.parse(localStorage.getItem('inventory')||'[]');
+    const rows=inventory.map(i=>`<tr><td>${i.name}</td><td>${i.current_stock}${i.unit}</td></tr>`).join('');
+    document.getElementById('inventoryTable').innerHTML='<tbody>'+rows+'</tbody>';
+}
+
+function loadTodayWorkers(){
+    const schedule=JSON.parse(localStorage.getItem('schedule')||'{}');
+    const employees=JSON.parse(localStorage.getItem('employees')||'[]');
+    const today=new Date().toISOString().split('T')[0];
+    const todaySchedule=schedule[today]||{};
+    let html='';
+    Object.entries(todaySchedule).forEach(([shift,info])=>{
+        const emp=employees.find(e=>e.id===info.employee_id);
+        if(emp){html+=`<div>${shift}: ${emp.name} (${info.start}-${info.end})</div>`;}
+    });
+    document.getElementById('todayWorkers').innerHTML=html||'오늘 근무자 없음';
+}
+
+function showTab(tab){
+    document.querySelectorAll('.tab-navigation button').forEach(btn=>{
+        btn.classList.toggle('active',btn.dataset.tab===tab);
+    });
+    document.querySelectorAll('.tab-content').forEach(cont=>{
+        cont.classList.toggle('active',cont.id===tab);
+    });
+    if(tab==='employees') loadEmployees();
+    if(tab==='inventory') loadInventory();
+    if(tab==='dashboard') loadTodayWorkers();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    initializeData();
+    loadTodayWorkers();
+    document.querySelectorAll('.tab-navigation button').forEach(btn=>{
+        btn.addEventListener('click',()=>showTab(btn.dataset.tab));
+    });
+});
+})();
+</script>
+</body>
+</html>
